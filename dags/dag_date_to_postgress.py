@@ -1,0 +1,53 @@
+from sqlalchemy import create_engine
+import pandas as pd
+import os
+from dotenv import load_dotenv
+from datetime import timedelta,datetime
+import airflow
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+
+
+default_args={
+    'owner':'amanuelalemayehu',
+    'retries':5,
+    'retry_delay':timedelta(minutes=2)
+}
+
+
+def migrate_data(path,db_table):
+    load_dotenv()
+    print("helooooooooooooooo")
+
+    user = os.getenv('DB_USER')
+    password = os.getenv('DB_PASSWORD')
+    host = os.getenv('DB_HOST')
+    port = os.getenv('DB_PORT')
+    database = os.getenv('DB_NAME')
+
+    connection_str = f'postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}'
+    engine = create_engine(connection_str)
+
+    df = pd.read_csv(path,sep="[,;:]",index_col=False)
+    print("<<<<<<<<<<start migrating data>>>>>>>>>>>>>>")
+    df.to_sql(db_table, con=engine, if_exists='replace',index_label='id')
+    print("<<<<<<<<<<<<<<<<<<<completed>>>>>>>>>>>>>>>>")
+
+
+
+with DAG(
+    dag_id='dag_data',
+    default_args=default_args,
+    description='this dag handles data manipulations',
+    start_date=airflow.utils.dates.days_ago(1),
+    schedule_interval='@once'
+)as dag:
+    task1 = PythonOperator(
+        task_id='migrate',
+        python_callable=migrate_data,
+        op_kwargs={
+            "path": "./../data/dataset.csv",
+            "db_table":"traffic_information"
+        }
+    )
+    task1

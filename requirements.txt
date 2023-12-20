@@ -1,0 +1,7 @@
+apache-airflow
+pandas
+dotenv
+psycopg2-binary
+sqlalchemy
+apache-airflow-providers-dbt-cloud[http]
+dbt-postgres
